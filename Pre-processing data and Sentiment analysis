@@ -1,0 +1,681 @@
+#####Python 
+
+
+import datetime
+
+import dt as dt
+import inline
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels
+import sklearn
+import nltk
+import json
+import csv
+from collections import Counter
+
+
+'''
+load_data(filepath)
+Given a filepath to a JSON file, loads in the file and formats the JSON
+'''
+
+
+def load_data(filepath):
+    d = []
+    with open(filepath) as file:
+        d = pd.DataFrame.from_dict(json.loads(line.rstrip()) for line in file)
+    return d
+
+########################
+# read data, sd, and highest and lowest 5 business's records save to csv
+#####################
+
+
+print("reading data from json")
+review_df= load_data('/Users/Jithin/PycharmProjects/Yelp/yelp_academic_dataset_review.json')
+
+
+
+all_business_id=[]
+review_df=review_df.sort_values(by=['business_id', 'date'], ascending=[True, True])
+all_business_id=review_df.business_id.unique()
+review_df['votes']=review_df['funny']+review_df['cool']+review_df['useful']
+review_df=review_df.drop([col for col in ['funny','useful','cool'] if col in review_df], axis=1)
+
+
+
+counter = Counter(review_df['business_id'])
+
+columns = ['b_id','count','std_d']
+df = pd.DataFrame(columns=columns)
+
+df['b_id']=counter.keys()
+df['count']=counter.values()
+
+df=df.sort_values(by=['count'], ascending=[False]) #sort std_d in decending order
+df.reset_index(drop=True, inplace=True)# reset df3 index
+
+############### hist
+
+plt.hist(df['count'], bins=[0,50,100,200,300,400])
+plt.title("Review counts Histogram")
+plt.ylabel("No:of business id's")
+plt.xlabel("No:of reviews")
+
+fig = plt.gcf()
+
+len(df[(df['count']>=100)])
+#Out[28]: 7934
+
+len(df[(df['count']>=1000)])
+177
+len(df[(df['count']>=700)])
+367
+
+
+#test = df_bs1.groupby([df_bs1.date]).mean()
+
+
+columns = ['b_id','std_d']
+df3 = pd.DataFrame(columns=columns)
+
+
+print("finding sd of ids with review count more than 100")
+
+for k in range(0,7934):
+    test=review_df.loc[review_df['business_id'].isin(df.iloc[k])]
+
+    l = len(test.stars)
+    if l <= 1 :
+              sd = 0
+    else:
+              sd=np.std(test.stars)
+
+
+    df3.loc[k] = [df.iloc[k].b_id, sd]
+
+
+
+
+print("Plot highest 5")
+
+df3=df3.sort_values(by=['std_d'], ascending=[False]) #sort std_d in decending order
+df3.reset_index(drop=True, inplace=True)# reset df3 index
+
+
+df_bs1=review_df[review_df.business_id== df3.b_id[0]]
+df_bs1['sd']=df3.std_d[0]
+df_bs2=review_df[review_df.business_id== df3.b_id[1]]
+df_bs2['sd']=df3.std_d[1]
+
+df_bs3=review_df[review_df.business_id== df3.b_id[2]]
+df_bs3['sd']=df3.std_d[2]
+
+df_bs4=review_df[review_df.business_id== df3.b_id[3]]
+df_bs4['sd']=df3.std_d[3]
+
+df_bs5=review_df[review_df.business_id== df3.b_id[4]]
+df_bs5['sd']=df3.std_d[4]
+
+
+
+
+
+print("Plot lowest 5 ")
+
+df3=df3.sort_values(by=['std_d'], ascending=[True]) #sort std_d in ascending order
+df3.reset_index(drop=True, inplace=True)# reset df3 index
+
+df_bs11=review_df[review_df.business_id== df3.b_id[0]]
+df_bs11['sd']=df3.std_d[0]
+df_bs22=review_df[review_df.business_id== df3.b_id[1]]
+df_bs22['sd']=df3.std_d[1]
+
+df_bs33=review_df[review_df.business_id== df3.b_id[2]]
+df_bs33['sd']=df3.std_d[2]
+
+df_bs44=review_df[review_df.business_id== df3.b_id[3]]
+df_bs44['sd']=df3.std_d[3]
+
+df_bs55=review_df[review_df.business_id== df3.b_id[4]]
+df_bs55['sd']=df3.std_d[4]
+
+frames = [df_bs1, df_bs2, df_bs3,df_bs4,df_bs5, df_bs11, df_bs22, df_bs33,df_bs44,df_bs55]
+result = pd.concat(frames)
+
+result.reset_index(drop=True, inplace=True)# reset df3 index
+result.to_csv('/Users/Jithin/PycharmProjects/Yelp/100count_top5andbottom5_sd')
+
+
+# 100 review count
+# bCYZD_C3ZJLXPnKBc0sAUw:Jim Marsh Kia,
+# fq1gYSEDB5tZT1pUCdWVkg:Bell Honda,
+# fdkJsDiy27e4Ragp27MMhg:Uber,
+# QITVudxg4pCScJnEUw46xg:Henderson Chevrolet,
+# l8tOW5Zxxv2UW3T5t-fR1Q:United Nissan,
+
+# KcCEAft-n9JiKPgad7y2lg: Eloff Perez - Las Vegas Realty Specialists - B,
+# rry0ESbBfS9s-acxsUVq_g: D&R House Of Diamonds,
+# QEE5vBdRf2tuchmZQ3H-Kg: Arizona Steamers,
+# 0GP25wmLzoHxf_Et-0tcHw: Vegas Discount Nutrition Superstore,
+# 7h08ecPN5bcW1Gp6UQZxNQ: Absolute Appliance Services
+
+
+###########################
+# plot avg of stars in each year/half/quad year for the businesses
+###########
+
+
+import datetime
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels
+import sklearn
+import nltk
+import json
+import csv
+from collections import Counter
+
+'''
+load_data(filepath)
+Given a filepath to a JSON file, loads in the file and formats the JSON
+'''
+
+
+def load_data(filepath):
+    d = []
+    with open(filepath) as file:
+        d = pd.DataFrame.from_dict(json.loads(line.rstrip()) for line in file)
+    return d
+
+
+
+newdf=pd.read_csv('/Users/Jithin/PycharmProjects/Yelp/1000count_top5andbottom5_sd')
+del newdf['Unnamed: 0']
+business_df= load_data('/Users/Jithin/PycharmProjects/Yelp/yelp_academic_dataset_business.json')
+
+newdf['date'] = pd.to_datetime(newdf['date'])
+newdf['year'], newdf['month'] = newdf['date'].dt.year, newdf['date'].dt.month
+
+all_business_id=newdf.business_id.unique()
+columns = ['b_id','date','avg_star']
+df = pd.DataFrame(columns=columns)
+#df[['year']] = df[['year']].astype(int)
+#df[['name']] = df[['name']].astype(object)
+df[['date']] = df[['date']].astype(int)
+c1=np.arange(1,7)
+c2=np.arange(4,7)
+c3=np.arange(7,10)
+c4=np.arange(10,13)
+k=0
+for i in  all_business_id:
+
+    #name= business_df[business_df.business_id.isin(all_business_id)].name
+    for j in newdf[(newdf.business_id == i)].year.unique():
+
+        avg_star=np.average(newdf[(newdf.business_id == i) & (newdf.year == j)& (newdf.month.isin(c1))].stars)
+        df.loc[k] = [i,j*100+3,avg_star]
+        k =k+1
+        avg_star=np.average(newdf[(newdf.business_id == i) & (newdf.year == j)& (newdf.month.isin(c2))].stars)
+        df.loc[k] = [i,j*100+6,avg_star]
+        k =k+1
+        avg_star=np.average(newdf[(newdf.business_id == i) & (newdf.year == j)& (newdf.month.isin(c3))].stars)
+        df.loc[k] = [i,j*100+9,avg_star]
+        k =k+1
+        avg_star=np.average(newdf[(newdf.business_id == i) & (newdf.year == j)& (newdf.month.isin(c4))].stars)
+        df.loc[k] = [i,j*100+12,avg_star]
+        k =k+1
+df['date'] = df['date'].apply(lambda x: pd.to_datetime(str(x), format='%Y%m'))
+df=df[df['date'] < '2017-01-01']
+
+df.to_csv('/Users/Jithin/PycharmProjects/Yelp/r_1000_4.csv')
+
+
+df.ffill()
+count=0
+
+for i in  all_business_id:
+    count=count+1
+    if(count<=5):
+        plt.plot(df[df.b_id == i].date, df[df.b_id == i].avg_star.ffill(), linestyle='-', marker='o')
+
+
+plt.xlabel('Date')
+plt.ylabel('Star Rating')
+plt.grid()
+plt.legend(['Jim Marsh Kia','Bell Honda','Uber','Henderson Chevrolet','United Nissan'],loc = 'best')
+plt.ylim((0,6))
+dstart = datetime.datetime(2007,6,1)
+dend = datetime.datetime(2017,1,1)
+#
+plt.xlim((dstart,dend))
+plt.show()
+
+
+
+
+
+################
+## each month avg
+############
+
+import datetime
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels
+import sklearn
+import nltk
+import json
+import csv
+from collections import Counter
+
+'''
+load_data(filepath)
+Given a filepath to a JSON file, loads in the file and formats the JSON
+'''
+
+
+def load_data(filepath):
+    d = []
+    with open(filepath) as file:
+        d = pd.DataFrame.from_dict(json.loads(line.rstrip()) for line in file)
+    return d
+
+
+
+newdf=pd.read_csv('/Users/Jithin/PycharmProjects/Yelp/100count_top5andbottom5_sd')
+del newdf['Unnamed: 0']
+business_df= load_data('/Users/Jithin/PycharmProjects/Yelp/yelp_academic_dataset_business.json')
+
+newdf['date'] = pd.to_datetime(newdf['date'])
+newdf['year'], newdf['month'] = newdf['date'].dt.year, newdf['date'].dt.month
+
+all_business_id=newdf.business_id.unique()
+columns = ['b_id','date','avg_star','name', 'text']
+df = pd.DataFrame(columns=columns)
+#df[['year']] = df[['year']].astype(int)
+#df[['name']] = df[['name']].astype(object)
+df[['date']] = df[['date']].astype(int)
+c1=np.arange(1,7)
+c2=np.arange(1,13)
+
+k=0
+for i in  all_business_id:
+
+    name= business_df[business_df.business_id == i].name.item()
+    for j in newdf[(newdf.business_id == i)].year.unique():
+      for h in c2: #newdf[(newdf.business_id == i) & (newdf.year ==j)].month.unique():
+
+        avg_star=np.average(newdf[(newdf.business_id == i) & (newdf.year == j)& (newdf.month ==h)].stars)
+        text= newdf[(newdf.business_id == i) & (newdf.year == j) & (newdf.month == h)].text.values
+        df.loc[k] = [i,j*100+h,avg_star, name,text]
+        k =k+1
+
+
+df['date'] = df['date'].apply(lambda x: pd.to_datetime(str(x), format='%Y%m'))
+df=df[df['date'] < '2017-01-01']
+#df=df.ffill()
+
+
+####### input for r change point analysis
+
+df.to_csv('/Users/Jithin/PycharmProjects/Yelp/r_100.csv')
+
+######## with nam eand text
+df.to_csv('/Users/Jithin/PycharmProjects/Yelp/r_100_text_name.csv')
+
+
+count=0
+
+for i in  all_business_id:
+    count=count+1
+    if(count<=5):
+        plt.plot(df[df.b_id == i].date, df[df.b_id == i].avg_star, linestyle='-', marker='o')
+# 'JpgVl3d20CMRNjf1DVnzGA', '9SU7ZZhaFUJJ6m2k5HKHeg',
+#        'VyjyHoBg3KC5BSFRlD0ZPQ', 'X8c23dur0ll2D9XTu-I8Qg',
+#        'eEnNw3_hBvxcFHyr23kAuA', 'NwZ39qdA06ROFIIMjAVPgw',
+#        'NCFwm2-TDb-oBQ2medmYDg', 'Xg5qEQiB-7L6kGJ5F4K3bQ',
+#        'hihud--QRriCYZw1zZvW4g', 'A-uZAD4zP3rRxb44WUGV5w'
+
+plt.xlabel('Date')
+plt.ylabel('Star Rating')
+plt.grid()
+plt.legend(['Jim Marsh Kia','Bell Honda','Uber','Henderson Chevrolet','United Nissan'],loc = 'best')
+plt.ylim((0,6))
+dstart = datetime.datetime(2007,6,1)
+dend = datetime.datetime(2017,1,1)
+#
+plt.xlim((dstart,dend))
+plt.show()
+
+
+
+
+################# After change point anaylysis... analayse text... # WordCloud
+import datetime
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels
+import sklearn
+import nltk
+import json
+import csv
+from collections import Counter
+from nltk.corpus import stopwords
+
+
+'''
+load_data(filepath)
+Given a filepath to a JSON file, loads in the file and formats the JSON
+'''
+
+
+def load_data(filepath):
+    d = []
+    with open(filepath) as file:
+        d = pd.DataFrame.from_dict(json.loads(line.rstrip()) for line in file)
+    return d
+
+
+
+newdf=pd.read_csv('/Users/Jithin/PycharmProjects/Yelp/100count_top5andbottom5_sd')
+del newdf['Unnamed: 0']
+newdf['votes']=newdf['funny']+newdf['cool']+newdf['useful']
+newdf=newdf.drop([col for col in ['funny','useful','cool'] if col in newdf], axis=1)
+#newdf['text'] = newdf['text'].str.lower().str.split()
+all_business_id=newdf.business_id.unique()
+
+newdf['date'] = pd.to_datetime(newdf['date'])
+newdf['year'], newdf['month'] = newdf['date'].dt.year, newdf['date'].dt.month
+
+col_list = ['business_id', 'year','month', 'text', 'stars']
+newdf=newdf[col_list]
+#newdf=newdf.groupby(['business_id','year','month'])['text'].apply(lambda x: ','.join(x)).reset_index()
+
+
+# bCYZD_C3ZJLXPnKBc0sAUw:Jim Marsh Kia,
+# fq1gYSEDB5tZT1pUCdWVkg:Bell Honda,
+# fdkJsDiy27e4Ragp27MMhg:Uber,
+# QITVudxg4pCScJnEUw46xg:Henderson Chevrolet,
+# l8tOW5Zxxv2UW3T5t-fR1Q:United Nissan,
+
+words=" ".join(newdf[(newdf.stars==1)&(newdf.year<2017)].text.str.lower())
+#words=" ".join(newdf.text.str.lower())
+
+#s=Counter(words).items()
+
+
+#text_bCYZD_C3ZJLXPnKBc0sAUw=newdf[newdf.business_id=="bCYZD_C3ZJLXPnKBc0sAUw"].text
+
+
+
+from wordcloud import WordCloud, STOPWORDS
+import matplotlib.pyplot as plt
+
+wordcloud = WordCloud(stopwords=STOPWORDS,).generate(words)
+
+
+plt.imshow(wordcloud)
+plt.axis('off')
+
+plt.show()
+
+
+
+###########senti for full data 100 top5 and bottom5
+
+import pandas as pd
+
+import json
+from textblob import TextBlob
+import json
+import pandas as pd
+from itertools import *
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True})
+from afinn import Afinn
+#list of stop words
+from nltk.corpus import stopwords
+#to tokenize a sentence into words
+from nltk.tokenize import wordpunct_tokenize
+import numpy as np
+import matplotlib.pyplot as plt
+import textblob as tb
+
+
+def load_data(filepath):
+    d = []
+    with open(filepath) as file:
+        d = pd.DataFrame.from_dict(json.loads(line.rstrip()) for line in file)
+    return d
+
+
+
+newdf=pd.read_csv('/Users/Jithin/PycharmProjects/Yelp/100count_top5andbottom5_sd')
+del newdf['Unnamed: 0']
+
+
+
+mask = newdf.business_id=='l8tOW5Zxxv2UW3T5t-fR1Q'
+
+FilteredDf = newdf[['stars', 'text']].loc[mask]
+#del newdf
+
+FilteredDf.count()
+
+
+afinn = Afinn()
+
+stop_words = set(stopwords.words('english'))
+stop_words.update(['mr','.', ',', '"', "'", '?', '!', ':', ';', '(', ')', '[', ']', '{', '}']) # remove it if you need punctuation
+unigrams = []
+afinn_value = []
+stars = []
+for ind,review in islice(FilteredDf.iterrows(),185):
+    unigrams = ( [i.lower() for i in wordpunct_tokenize(review['text']) if i.lower() not in stop_words])
+    afinn_value.append(np.mean(list(map(lambda x: afinn.score(str(x.encode('utf-8'))), unigrams))))
+    stars.append(review['stars'])
+len(afinn_value)
+
+p_stars = pd.DataFrame()
+p_stars['stars'] = stars
+p_stars['senti_value'] = afinn_value
+p_stars['stars'].min()
+
+
+ax = p_stars.boxplot(by=['stars'], figsize=(10,6))
+ax.get_figure().suptitle("")
+ax.set_title('Average sentiment score and Star rating - Using Afinn.')
+ax.set_xlabel('stars')
+ax.set_ylabel('Average sentiment score')
+
+
+# Using Textblob
+
+#
+c= ["2009-02-01" ,"2009-09-01", "2010-01-01", "2010-06-01", "2011-04-01" ,"2011-07-01" ,"2014-05-01", "2015-12-01"]
+
+FilteredDf = newdf[['stars', 'text']]
+print(FilteredDf['text'][0])
+print(FilteredDf['stars'][0])
+details = TextBlob(FilteredDf['text'][0])
+print(details.sentiment)
+
+#mask = (newdf['date'] > '2009-09-01') & (newdf['date'] <= '2010-01-01')&(newdf.business_id=='fq1gYSEDB5tZT1pUCdWVkg')
+FilteredDf = newdf[['stars', 'text']].loc[mask]
+FilteredDf.count()
+
+tb_value = []
+stars_tb = []
+for ind,review in islice(FilteredDf.iterrows(),1865):
+    details = TextBlob(review['text'])
+    tb_value.append(details.sentiment.polarity)
+    stars_tb.append(review['stars'])
+
+p_stars_tb = pd.DataFrame()
+p_stars_tb['stars'] = stars_tb
+p_stars_tb['senti_value'] = tb_value
+
+
+ax = p_stars_tb.boxplot(by=['stars'], figsize=(10,6))
+ax.get_figure().suptitle("")
+ax.set_title('Average sentiment score and Star rating - Using Textblob.')
+ax.set_xlabel('stars')
+ax.set_ylabel('Average sentiment score')
+
+tb_value = []
+stars_tb = []
+d=[]
+te=[]
+pos=[]
+neg=[]
+for ind,review in islice(FilteredDf.iterrows(),24):
+
+    details = TextBlob(review['text'])
+    tb_value.append(details.sentiment.polarity)
+    if details.sentiment.polarity > 0:
+        pos.append(review['text'].replace('\n', ' '))
+        for item in details.noun_phrases:
+            print (item,details.sentiment.polarity )
+    elif details.sentiment.polarity < 0:
+            neg.append(review['text'].replace('\n', ' '))
+            for item in details.noun_phrases:
+                print(item,details.sentiment.polarity )
+    d.append(review['date'])
+    stars_tb.append(review['avg_star'])
+    te.append(review['text'])
+
+
+print(pos)
+print(neg)
+
+p_stars_tb = pd.DataFrame()
+#p_stars_tb['avg_star'] = stars_tb
+p_stars_tb['senti_value'] = tb_value
+p_stars_tb['date']=d
+p_stars_tb['text']=te
+
+p_max=max(p_stars_tb['senti_value'])
+
+print(p_stars_tb[p_stars_tb['senti_value']==p_max].text)
+
+p_stars_tb['date'] = pd.to_datetime(p_stars_tb['date'])
+
+
+plt.plot(p_stars_tb['date'], p_stars_tb['senti_value'].ffill(), linestyle='-', marker='o')
+
+
+plt.xlabel('Date')
+plt.ylabel('Sentiment Score')
+dstart = datetime.datetime(2007,6,1)
+dend = datetime.datetime(2017,1,1)
+plt.xlim((dstart,dend))
+plt.show()
+
+
+
+
+
+
+
+#sum of scores of each period. and plot vs date
+
+
+# bCYZD_C3ZJLXPnKBc0sAUw:Jim Marsh Kia,
+# fq1gYSEDB5tZT1pUCdWVkg:Bell Honda,
+# fdkJsDiy27e4Ragp27MMhg:Uber,
+# QITVudxg4pCScJnEUw46xg:Henderson Chevrolet,
+# l8tOW5Zxxv2UW3T5t-fR1Q:United Nissan,
+
+
+mask = (newdf.b_id=='7h08ecPN5bcW1Gp6UQZxNQ')
+
+FilteredDf = newdf[['avg_star', 'text', 'date' ]].loc[mask]
+
+
+FilteredDf=FilteredDf.bfill().ffill()
+FilteredDf.count()
+
+
+
+# bell  c= ["2009-02-01", "2009-09-01", "2010-01-01", "2010-06-01" ,"2011-04-01", "2011-07-01", "2011-12-01" ,"2012-02-01", "2012-03-01" ,"2014-05-01", "2014-07-01", "2015-12-01"]
+#uber c=["2014-07-01" ,"2014-09-01" ,"2015-10-01"]
+
+tb_value = []
+stars_tb = []
+d=[]
+for ind,review in islice(FilteredDf.iterrows(),24):
+
+    details = TextBlob(review['text'])
+    tb_value.append(details.sentiment.polarity)
+    d.append(review['date'])
+    #stars_tb.append(FilteredDf['avg_star'])
+
+p_stars_tb = pd.DataFrame()
+#p_stars_tb['avg_star'] = stars_tb
+p_stars_tb['senti_value'] = tb_value
+p_stars_tb['date']=d
+p_stars_tb.to_csv('senti score.csv')
+
+p_stars_tb['date'] = pd.to_datetime(p_stars_tb['date'])
+#
+# n = pd.DataFrame()
+# n['date']=pd.to_datetime(c)
+#
+#
+#
+# cp=[]
+# sv=[]
+# j=0
+# k=1
+# cp.append(k)
+# sv.append(np.mean(p_stars_tb[(p_stars_tb['date'] < n['date'][j])].senti_value))
+# k = k + 1
+#
+# for i in range(0, len(c)-1):
+#     cp.append(k)
+#
+#     sv.append(np.mean(p_stars_tb[(p_stars_tb['date']>=n['date'][j]) & (p_stars_tb['date']<n['date'][j+1])].senti_value))
+#     j = j + 1
+#     k=k+1
+
+plt.plot( p_stars_tb['date'], p_stars_tb['senti_value'],linestyle='-', marker='o')
+
+
+plt.xlabel('Date')
+plt.ylabel('Sentiment Score')
+
+plt.show()
+
+
+
+#charts
+
+
+from pylab import *
+
+# make a square figure and axes
+figure(1, figsize=(6,6))
+ax = axes([0.1, 0.1, 0.8, 0.8])
+
+# The slices will be ordered and plotted counter-clockwise.
+labels = '1 star', '2 star', '3 star', '4 star', '5 star'
+fracs = [440, 44, 11, 60,1013]
+explode=(0, 0, 0, 0,0)
+
+pie(fracs, explode=explode, labels=labels,
+                autopct='%1.1f%%', shadow=True, startangle=90)
+
+
+title('Raining Hogs and Dogs', bbox={'facecolor':'0.8', 'pad':5})
+
+show()
