@@ -1,0 +1,91 @@
+### R code
+
+MyData <- read.csv(file="/Users/Jithin/PycharmProjects/Yelp/r_100.csv", header=TRUE, sep=",")
+
+MyData <- data.frame(MyData)
+
+# unique(MyData$b_id, incomparables = FALSE,)
+
+# 100 review count
+# bCYZD_C3ZJLXPnKBc0sAUw:Jim Marsh Kia,
+# fq1gYSEDB5tZT1pUCdWVkg:Bell Honda,
+# fdkJsDiy27e4Ragp27MMhg:Uber, 
+# QITVudxg4pCScJnEUw46xg:Henderson Chevrolet,
+# l8tOW5Zxxv2UW3T5t-fR1Q:United Nissan,
+
+# KcCEAft-n9JiKPgad7y2lg: Eloff Perez - Las Vegas Realty Specialists - B,
+# rry0ESbBfS9s-acxsUVq_g: D&R House Of Diamonds,
+# QEE5vBdRf2tuchmZQ3H-Kg: Arizona Steamers,
+# 0GP25wmLzoHxf_Et-0tcHw: Vegas Discount Nutrition Superstore,
+# 7h08ecPN5bcW1Gp6UQZxNQ: Absolute Appliance Services
+
+
+
+# 1000 review count
+# JpgVl3d20CMRNjf1DVnzGA:Pampas Brazilian Grille, 
+# 9SU7ZZhaFUJJ6m2k5HKHeg:SLS Las Vegas Hotel & Casino,
+# VyjyHoBg3KC5BSFRlD0ZPQ:Caesars Palace Las Vegas Hotel & Casino,
+# X8c23dur0ll2D9XTu-I8Qg:Hakkasan Nightclub,
+# eEnNw3_hBvxcFHyr23kAuA:Hard Rock Hotel & Casino,
+# 
+# NwZ39qdA06ROFIIMjAVPgw: Las Vegas Guest List,
+# NCFwm2-TDb-oBQ2medmYDg: Fountains of Bellagio,
+# Xg5qEQiB-7L6kGJ5F4K3bQ: Little Miss BBQ,
+# hihud--QRriCYZw1zZvW4g: Gangnam Asian BBQ Dining
+# A-uZAD4zP3rRxb44WUGV5w: Soho Japanese Restaurant
+
+
+
+pdata <- MyData[MyData$b_id == 'bCYZD_C3ZJLXPnKBc0sAUw', ]
+
+library(zoo)
+pdata <-na.locf(pdata, fromLast = TRUE)
+pdata
+
+pdata$avg_star <- as.numeric(pdata$avg_star)
+stars.ts = ts(pdata$avg_star, frequency=12, start=c(2011), end=c(2017))
+
+plot(stars.ts, main="")
+title(main = "Jim Marsh Kia [star rating: time series]")
+
+library(changepoint)
+
+mstar = cpt.mean(stars.ts,method="PELT",test.stat="Normal",class=TRUE,
+                 param.estimates=TRUE)
+cpts(mstar)
+plot(mstar,main="")
+title(main = "Jim Marsh Kia [stars:mean,method:PELT]")
+#cpts.ts(vstar)
+
+mstar = cpt.mean(stars.ts,method="BinSeg",penalty="None",test.stat="Normal",class=TRUE,
+                 param.estimates=TRUE)
+cpts(mstar)
+plot(mstar,main="")
+title(main = "Absolute Appliance Services [stars:mean,method:BinSeg]")
+mestar=mean(stars.ts)
+plot(mestar)
+
+#vstar = cpt.var(stars.ts, method="PELT")
+vstar = cpt.var(diff(stars.ts), method="PELT")
+cpts(vstar)
+plot(vstar,main="")
+title(main = "Jim Marsh Kia [stars:var,method:PELT]")
+
+# par(mfrow=c(2,1))
+# plot(stars.ts,main="")
+# plot(vstar,main="")
+
+
+vnstar = cpt.var(diff(stars.ts), penalty ="None",Q=7,method="BinSeg")
+cpts(vnstar)
+#plot(vstar,main="")
+plot(vnstar,main="")
+title(main = "Jim Marsh Kia [stars:var,method:BinSeg]")
+
+d = decompose(stars.ts)
+plot(d)
+# dd=stars.ts - d$seasonal
+# plot(dd)
+
+stlstar= stl(stars.ts, s.window="periodic")
+plot(stlstar)
